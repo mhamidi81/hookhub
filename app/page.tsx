@@ -1,65 +1,111 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useMemo } from "react";
+import { Header } from "./components/Header";
+import { SearchBar } from "./components/SearchBar";
+import { FilterPills } from "./components/FilterPills";
+import { HookGrid } from "./components/HookGrid";
+import { EmptyState } from "./components/EmptyState";
+import { Footer } from "./components/Footer";
+import { getAllHooks } from "./lib/hooks-data";
+import { filterHooks } from "./lib/filter-utils";
+import { HookCategory, ProgrammingLanguage } from "./types/hook";
 
 export default function Home() {
+  const allHooks = getAllHooks();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<HookCategory[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<ProgrammingLanguage[]>([]);
+
+  const handleToggleCategory = (category: HookCategory | ProgrammingLanguage) => {
+    setSelectedCategories((prev) => {
+      const cat = category as HookCategory;
+      if (prev.includes(cat)) {
+        return prev.filter((c) => c !== cat);
+      }
+      return [...prev, cat];
+    });
+  };
+
+  const handleToggleLanguage = (language: HookCategory | ProgrammingLanguage) => {
+    setSelectedLanguages((prev) => {
+      const lang = language as ProgrammingLanguage;
+      if (prev.includes(lang)) {
+        return prev.filter((l) => l !== lang);
+      }
+      return [...prev, lang];
+    });
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategories([]);
+    setSelectedLanguages([]);
+  };
+
+  const filteredHooks = useMemo(
+    () => filterHooks(allHooks, searchQuery, selectedCategories, selectedLanguages),
+    [allHooks, searchQuery, selectedCategories, selectedLanguages]
+  );
+
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    selectedCategories.length > 0 ||
+    selectedLanguages.length > 0;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="flex min-h-screen flex-col bg-gray-950">
+      <Header />
+
+      <main className="flex-grow">
+        <div className="container mx-auto px-4 py-8">
+          {/* Search and Filters Section */}
+          <div className="mb-8 space-y-6 rounded-lg border border-gray-800 bg-gray-900/50 p-6">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search hooks by name, description, or tags..."
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+            <FilterPills
+              type="category"
+              selected={selectedCategories}
+              onToggle={handleToggleCategory}
+            />
+
+            <FilterPills
+              type="language"
+              selected={selectedLanguages}
+              onToggle={handleToggleLanguage}
+            />
+
+            {hasActiveFilters && (
+              <div className="flex items-center justify-between border-t border-gray-800 pt-4">
+                <p className="text-sm text-gray-400">
+                  Showing {filteredHooks.length} of {allHooks.length} hooks
+                </p>
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm text-blue-400 transition-colors hover:text-blue-300"
+                  tabIndex={0}
+                >
+                  Clear all filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Hooks Grid or Empty State */}
+          {filteredHooks.length > 0 ? (
+            <HookGrid hooks={filteredHooks} />
+          ) : (
+            <EmptyState onClearFilters={handleClearFilters} />
+          )}
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
