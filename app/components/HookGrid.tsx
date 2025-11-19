@@ -12,8 +12,15 @@ export const HookGrid = ({ hooks }: HookGridProps) => {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {hooks.map((hook) => (
-        <HookCard key={hook.id} hook={hook} />
+      {hooks.map((hook, index) => (
+        <div
+          key={hook.id}
+          style={{
+            animation: `fadeInUp 0.5s ease-out ${index * 0.05}s both`,
+          }}
+        >
+          <HookCard hook={hook} />
+        </div>
       ))}
     </div>
   );
